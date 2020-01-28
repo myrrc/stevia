@@ -10,9 +10,6 @@ struct child : base1, base2 {};
 using child2 = child;
 
 int main() {
-  //constexpr bool t = simp::check<child>(inherits<base1> && inherits<base2>);
-  //static_assert(t);
-
   static_assert(simp::check<child, child2>(inherits<base1, base2> && !inherits<base3>));
-  static_assert(simp::check<int, float, short, long, bool>(is_integral));
+  static_assert(simp::check<base1, int, float, short, long, bool>(is_integral));
 }
