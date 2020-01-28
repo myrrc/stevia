@@ -4,6 +4,7 @@
 
 #include "core.h"
 #include <cstddef>
+#include <functional>
 
 namespace simp::utils {
 
@@ -42,7 +43,8 @@ public:
     template <class Target>
     CONSTEXPR auto find() -> dttl_store<std::is_same_v<decltype(static_cast<store_base *>(this)), Target>, Target &> {
         auto *base = static_cast<store_base *>(this);
-        if CONSTEXPR_IF (std::is_same_v<decltype(base->t), Target>) {return dttl_store<true, Target &>{base->t}; }
+        if
+            CONSTEXPR_IF(std::is_same_v<decltype(base->t), Target>) { return dttl_store<true, Target &>{base->t}; }
         return dttl_store<false, Target &>{};
     }
 
@@ -65,7 +67,8 @@ public:
     template <class Target>
     CONSTEXPR auto find() -> dttl_store<std::is_same_v<decltype(static_cast<store_base *>(this)), Target>, Target &> {
         auto *base = static_cast<store_base *>(this);
-        if CONSTEXPR_IF (std::is_same_v<decltype(base->t), Target>) { return dttl_store<true, Target &>{base->t}; }
+        if
+            CONSTEXPR_IF(std::is_same_v<decltype(base->t), Target>) { return dttl_store<true, Target &>{base->t}; }
         return dttl_store<false, Target &>{};
     }
 
@@ -84,7 +87,8 @@ template <size_t I, class DTTL> using get_type_v = typename get_type<I, DTTL>::v
 
 template <size_t I, bool StoreValues, class Item, class... Others>
 auto &get_value(const utils::dttl<StoreValues, Item, Others...> &target) {
-    if CONSTEXPR_IF (I == 0) { return static_cast<typename decltype(target)::store_base &>(target).t; }
+    if
+        CONSTEXPR_IF(I == 0) { return static_cast<typename decltype(target)::store_base &>(target).t; }
 
     return get_value<I - 1>(static_cast<typename decltype(target)::base &>(target));
 }
@@ -92,21 +96,24 @@ auto &get_value(const utils::dttl<StoreValues, Item, Others...> &target) {
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 template <class Functor, bool storeValues, class Cell>
-CONSTEXPR auto extract_unique(Functor &&functor, const utils::dttl<storeValues, Cell> &)
-    -> std::conditional_t<std::invoke_result_t<Functor, Cell>{}, utils::dttl<storeValues, Cell>,
-                          utils::dttl<storeValues>> {
+CONSTEXPR auto extract_unique(Functor &&f, const utils::dttl<storeValues, Cell> &)
+    -> std::conditional_t<
+        std::is_same_v<
+            std::true_type,
+            std::invoke_result<Functor, Cell>
+            >,
+            utils::dttl<storeValues, Cell>, utils::dttl<storeValues>> {
     return {};
 }
 #pragma clang diagnostic pop
 
 template <class Functor, bool storeValues, class Cell, class... Cells>
-CONSTEXPR auto extract_unique(Functor &&functor, const utils::dttl<storeValues, Cell, Cells...> &dttl)
-    -> std::conditional_t<!(std::invoke_result_t<Functor, Cell>{})
-                              || utils::dttl<storeValues, Cells...>::template has<Cell>,
-                          std::invoke_result_t<decltype(&extract_unique<Cells...>), utils::dttl<storeValues, Cells...>>,
-
-                          typename std::invoke_result_t<decltype(&extract_unique<Cells...>),
-                                                        utils::dttl<storeValues, Cells...>>::template add<Cell>> {
+CONSTEXPR auto extract_unique(Functor &&, const utils::dttl<storeValues, Cell, Cells...> &dttl) -> std::conditional_t<
+    std::is_same_v<std::true_type,
+                   std::invoke_result<Functor, Cell>> || utils::dttl<storeValues, Cells...>::template has<Cell>,
+    std::invoke_result_t<decltype(&extract_unique<Functor, storeValues, Cells...>), utils::dttl<storeValues, Cells...>>,
+    typename std::invoke_result_t<decltype(&extract_unique<Functor, storeValues, Cells...>),
+                                  utils::dttl<storeValues, Cells...>>::template add<Cell>> {
     return {};
 }
 } // namespace simp::utils

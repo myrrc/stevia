@@ -33,7 +33,7 @@ private:
 
     template <class Cell> CONSTEXPR void parse_cell() {
         if CONSTEXPR_IF (std::is_base_of_v<modifiers::modifier_base, Cell>) {
-            contexts.template find<Cell>().t.appeared();
+            //contexts.template find<Cell>().t.appeared();
             return;
         }
 

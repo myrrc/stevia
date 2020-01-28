@@ -1,4 +1,4 @@
 #pragma once
 
 #define CONSTEXPR inline
-#define CONSTEXPR_IF
+#define CONSTEXPR_IF constexpr
