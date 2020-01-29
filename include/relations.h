@@ -1,40 +1,40 @@
 #pragma once
 
 #include "modifiers.h"
+#include "tl.h"
 
 namespace simp {
 
-template <class... Args> using tape = utils::dttl<false, Args...>;
+template <class... Args> using tape = typelist::tl<true, Args...>;
 
 namespace relations {
 
 struct relation_base {};
 
+using modifiers::mod_neg;
+using modifiers::mod_or;
+
 template <template <class...> class Relation, class... Dependent> struct dependent_relation : relation_base {
     using type = Relation<Dependent...>;
 
-    CONSTEXPR auto operator!() const { return tape<modifiers::mod_neg, type>{}; }
+    CONSTEXPR auto operator!() const -> tape<mod_neg, type> const { return {}; }
 
-    template <template <class...> class OtherRel, class... OtherDep,
-              typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator&&(const OtherRel<OtherDep...> &) const {
-        return tape<type, OtherRel<OtherDep>...>{};
+    template <template <class...> class OtherRel, class... OtherDep>
+    CONSTEXPR auto operator&&(const OtherRel<OtherDep...> &) const -> tape<type, OtherRel<OtherDep...>> const {
+        return {};
     }
 
-    template <template <class...> class OtherRel, class... OtherDep,
-              typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator||(const OtherRel<OtherDep...> &) const {
-        return tape<type, modifiers::mod_or, OtherRel<OtherDep...>>{};
+    template <template <class...> class OtherRel, class... OtherDep>
+    CONSTEXPR auto operator||(const OtherRel<OtherDep...> &) const -> tape<type, mod_or, OtherRel<OtherDep...>> const {
+        return {};
     }
 
-    template <class OtherRel, typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator&&(const OtherRel &other) const {
-        return tape<type, OtherRel>{};
+    template <class OtherRel> CONSTEXPR auto operator&&(const OtherRel &) const -> tape<type, OtherRel> const {
+        return {};
     }
 
-    template <class OtherRel, typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator||(const OtherRel &other) const {
-        return tape<type, OtherRel>{};
+    template <class OtherRel> CONSTEXPR auto operator||(const OtherRel &) const -> tape<type, mod_or, OtherRel> const {
+        return {};
     }
 };
 
@@ -43,26 +43,23 @@ template <class Relation> struct relation : relation_base {
 
     CONSTEXPR auto operator!() const { return tape<modifiers::mod_neg, type>{}; }
 
-    template <template <class...> class OtherRel, class... OtherDep,
-              typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator&&(const OtherRel<OtherDep...> &) const {
-        return tape<type, OtherRel<OtherDep>...>{};
+    template <template <class...> class OtherRel, class... OtherDep>
+    CONSTEXPR auto operator&&(const OtherRel<OtherDep...> &) const -> tape<type, OtherRel<OtherDep...>> const {
+        return {};
     }
 
-    template <template <class...> class OtherRel, class... OtherDep,
-              typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator||(const OtherRel<OtherDep...> &) const {
-        return tape<type, modifiers::mod_or, OtherRel<OtherDep...>>{};
+    template <template <class...> class OtherRel, class... OtherDep>
+    CONSTEXPR auto operator||(const OtherRel<OtherDep...> &) const
+        -> tape<type, modifiers::mod_or, OtherRel<OtherDep...>> const {
+        return {};
     }
 
-    template <class OtherRel, typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator&&(const OtherRel &other) const {
-        return tape<type, OtherRel>{};
+    template <class OtherRel> CONSTEXPR auto operator&&(const OtherRel &) const -> tape<type, OtherRel> const {
+        return {};
     }
 
-    template <class OtherRel, typename = std::enable_if_t<std::is_base_of_v<relation_base, OtherRel>>>
-    CONSTEXPR auto operator||(const OtherRel &other) const {
-        return tape<type, OtherRel>{};
+    template <class OtherRel> CONSTEXPR auto operator||(const OtherRel &) const -> tape<type, mod_or, OtherRel> const {
+        return {};
     }
 };
 

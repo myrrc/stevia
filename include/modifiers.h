@@ -7,7 +7,7 @@
 namespace simp::modifiers {
 
 struct modifier_base {};
-template <class Modifier> struct relation_modifier : modifier_base {
+template <class ...Modifier> struct relation_modifier : modifier_base {
     bool found{false};
 
     CONSTEXPR void appeared() { found = true; }

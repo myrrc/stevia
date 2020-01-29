@@ -3,7 +3,7 @@
 #include "checks.h"
 #include "operators.h"
 
-namespace simp {
+namespace simp::guard {
 
 template <class... Origins, class... Cells> CONSTEXPR bool check(const tape<Cells...> &tape) {
     return checks_internal::check_impl<Origins...>(tape, std::index_sequence_for<Origins...>{});
