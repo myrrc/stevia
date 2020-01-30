@@ -16,6 +16,6 @@ jobs:
     - name: make distcheck
       run: make distcheck
     - name: Download artifact
-    - uses: actions/download-artifact@v1.0.0
+      uses: actions/download-artifact@v1.0.0
       with:
         name: build-log
