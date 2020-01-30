@@ -1,11 +1,11 @@
 #pragma once
 
+#include "../tl.h"
 #include "relations.h"
 #include "state_machine.h"
-#include "tl.h"
 #include <cstddef>
 
-namespace simp::checks_internal {
+namespace simp::guard_internal {
 
 using typelist::tl;
 using typelist::utils::extract_unique;
@@ -20,4 +20,15 @@ CONSTEXPR bool check_impl(const tl<true, Cells...> &tape, [[maybe_unused]] std::
     return ((state_machine::evaluate<decltype(get<I>(origins))>(modifiers, tape)) && ... && true);
 }
 
+template <class... Origins, class... Cells> CONSTEXPR
+bool where_impl(const tl<true, Origins...>&, const tl<true, Cells...> &tape) {
+    return simp::guard_internal::check_impl<Origins...>(tape, std::index_sequence_for<Origins...>{});
+}
+
+template <bool cond>
+struct assert_helper {
+        CONSTEXPR assert_helper() {
+            static_assert(cond, "Assertion failed");
+        }
+    };
 }

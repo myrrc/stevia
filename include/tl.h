@@ -2,8 +2,8 @@
 #pragma ide diagnostic ignored "HidingNonVirtualFunction"
 #pragma once
 
-#include "core.h"
-#include "modifiers.h"
+#include "internal/core.h"
+#include "internal/modifiers.h"
 
 #include <cstddef>
 #include <functional>
@@ -125,13 +125,13 @@ CONSTEXPR auto get(const tl<pure, Type, Types...>& list) {
 
 namespace {
 template <class Functor, size_t... I, class... Args>
-CONSTEXPR void apply_impl(Functor &&functor, tl<true, Args...> &list, std::index_sequence<I...>) {
+CONSTEXPR void apply_impl(Functor &&functor, tl<false, Args...> &list, std::index_sequence<I...>) {
     (functor(get<I>(list).value), ...);
 }
 }
 
 template <class Functor, class... Args>
-CONSTEXPR void apply(Functor &&functor, tl<true, Args...> &list) {
+CONSTEXPR void apply(Functor &&functor, tl<false, Args...> &list) {
     apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<Args...>{});
 }
 

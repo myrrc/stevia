@@ -40,6 +40,7 @@ private:
                         modifier.reset();
                     },
                     contexts);
+                // TODO the bug is probably here
             }
     }
 
