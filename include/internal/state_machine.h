@@ -2,6 +2,11 @@
 
 #include "core.h"
 
+#ifdef SIMP_LOG_FLOW
+#include <iostream>
+#include "../../contrib/type_name.h"
+#endif
+
 namespace simp::relations {
 struct relation_base;
 }
@@ -12,6 +17,14 @@ using typelist::tl;
 
 template <class Origin, class... Modifiers> struct state_machine {
     template <class... Cells> CONSTEXPR explicit state_machine(const tl<true, Cells...> &list) {
+        #ifdef SIMP_LOG_FLOW
+        std::cout << "Initialized state machine for \""
+                  << type_name<Origin>() << "\"\n"
+                  << sizeof...(Cells) << " steps\n"
+                  << "Cells tl: " << type_name<decltype(list)>()
+                  << std::endl;
+        #endif
+
         parse_tape(list, std::index_sequence_for<Cells...>{});
     }
 
@@ -28,18 +41,36 @@ private:
         if
             CONSTEXPR_IF(std::is_base_of_v<modifiers::modifier_base, Cell>) {
                 typelist::utils::find<Cell>(contexts).value.appeared();
+
+                #ifdef SIMP_LOG_FLOW
+                std::cout << "|\tFound modifier "
+                          << type_name<Cell>()
+                          << std::endl;
+                #endif
+
                 return;
             }
         else if
             CONSTEXPR_IF(std::is_base_of_v<relations::relation_base, Cell>) {
                 bool relation_eval_result = parse_relation<Cell>();
 
+            #ifdef SIMP_LOG_FLOW
+                std::cout << "|\tExpression :" << type_name<Cell>()
+                      << " evaluated to " << std::boolalpha
+                      << relation_eval_result
+                      <<", state: " << state << " -> ";
+            #endif
+
                 typelist::utils::apply(
                     [this, &relation_eval_result](auto &modifier) CONSTEXPR mutable {
-                        state = modifier.evaluate(state, relation_eval_result);
-                        modifier.reset();
-                    },
-                    contexts);
+                    state = modifier.evaluate(state, relation_eval_result);
+                    modifier.reset();
+                }, contexts);
+
+            #ifdef SIMP_LOG_FLOW
+                std::cout << std::boolalpha << state << std::endl;
+            #endif
+
                 // TODO the bug is probably here
             }
     }

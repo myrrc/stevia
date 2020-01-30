@@ -135,13 +135,13 @@ CONSTEXPR void apply(Functor &&functor, tl<false, Args...> &list) {
     apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<Args...>{});
 }
 
-template <class Target, class E>
-CONSTEXPR auto find(const tl<true, E>& list) {
+template <bool pure, class Target, class E>
+CONSTEXPR auto find(const tl<pure, E>& list) {
     if
     CONSTEXPR_IF(std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
-        return tl_holder<false, Target>();
+        return tl_holder<!pure /*to indicate that element was not found*/, Target>();
     }
 }
 
@@ -149,10 +149,10 @@ namespace {
         template <class...> struct ne {};
         }
 
-template <class Target, class First, class... Others,
+template <bool pure, class Target, class First, class... Others,
     typename = std::enable_if_t<!std::is_same_v<ne<>, ne<Others...>>>
 >
-CONSTEXPR auto find(const tl<true, First, Others...> &list) {
+CONSTEXPR auto find(const tl<pure, First, Others...> &list) {
     if CONSTEXPR_IF(std::is_same_v<First, Target>) {
         return list.get_holder();
     } else {
@@ -169,41 +169,37 @@ CONSTEXPR auto add_front(const tl<true, E, Tail...>&) -> tl<true, Add, E, Tail..
 
 /// Single-element tl with a dependent head
 template <template <class...> class E, class... Dep>
-CONSTEXPR auto extract_unique(const tl<true, E<Dep...>> &)
+CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>> &)
     -> std::conditional_t<std::is_same_v<modifiers::relation_modifier<Dep...>, E<Dep...>>, tl<true, E<Dep...>>,
                           tl<true>> {
     return {};
 }
 
-/// Single-element tl with an in dependent head
+/// Single-element tl with an independent head
 template <class E, class... Dep>
-CONSTEXPR auto extract_unique(const tl<true, E> &) -> tl<true> {
+CONSTEXPR auto extract_unique_modifiers(const tl<true, E> &) -> tl<true> {
 return {};
 }
-
 
 /// tl with a dependent head
 template <template <class...> class E, class... Dep, class... Tail,
           typename = std::enable_if_t<!std::is_same_v<ne<>, ne<Tail...>>>>
-CONSTEXPR auto extract_unique(const tl<true, E<Dep...>, Tail...> &list) {
-    auto base_res = extract_unique(list.get_tail());
-    using find_res = decltype(find<E<Dep...>>(list));
-
-    if constexpr (
-        !std::is_same_v<modifiers::relation_modifier<Dep...>, E<Dep...>> ||
-        !std::is_same_v<find_res, tl_holder<false, E<Dep...>>>) {
-            return base_res;
-        }
-    else {
-        return add_front<E<Dep...>>(list);
-    }
+CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list) {
+    return
+        /// Current type is a modifier
+        (std::is_same_v<modifiers::relation_modifier<Dep...>, E<Dep...> > &&
+         /// Tail does not contain it
+         std::is_same_v<decltype(find<true, E<Dep...>>(list.get_tail())), tl_holder<false, E<Dep...>>
+         >) ?
+         add_front<E<Dep...>>(list) : /// add it
+         extract_unique_modifiers(list.get_tail()); /// else return the tail
 }
 
 /// tl with an independent head
 template <class E, class... Tail,
     typename = std::enable_if_t<!std::is_same_v<ne<>, ne<Tail...>>>>
-CONSTEXPR auto extract_unique(const tl<true, E, Tail...> &list) {
-    return extract_unique(list.get_tail());
+CONSTEXPR auto extract_unique_modifiers(const tl<true, E, Tail...> &list) {
+    return extract_unique_modifiers(list.get_tail());
 }
 } // namespace utils
 }

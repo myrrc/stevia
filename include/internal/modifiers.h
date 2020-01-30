@@ -18,7 +18,7 @@ template <class ...Modifier> struct relation_modifier : modifier_base {
 
 struct mod_or_base_t {};
 
-template <> struct relation_modifier<mod_or_base_t> {
+template <> struct relation_modifier<mod_or_base_t> : modifier_base {
     bool found{false};
 
     CONSTEXPR void appeared() { found = true; }
@@ -33,7 +33,7 @@ using mod_or = relation_modifier<mod_or_base_t>;
 
 struct mod_neg_base_t {};
 
-template <> struct relation_modifier<mod_neg_base_t> {
+template <> struct relation_modifier<mod_neg_base_t> : modifier_base {
     bool found{false};
 
     CONSTEXPR void appeared() { found = true; }

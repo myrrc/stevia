@@ -11,7 +11,9 @@ struct child : base1, base2 {};
 using child2 = child;
 
 int main() {
-    static_assert(simp::guard::check<child>(inherits<base1, base3>));
+    bool res = simp::guard::check<child>(!inherits<base3>);
+    return res ? 0 : 99;
+
     //static_assert(simp::check<child, child2>(inherits<base1, base2> && !inherits<base3>));
 
     //simp::guard::assert<child>(inherits<base1, base2>);

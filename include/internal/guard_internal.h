@@ -5,17 +5,29 @@
 #include "state_machine.h"
 #include <cstddef>
 
+#ifdef SIMP_LOG_FLOW
+#include <iostream>
+#endif
+
 namespace simp::guard_internal {
 
 using typelist::tl;
-using typelist::utils::extract_unique;
 using typelist::utils::get;
 
 template <class... Origins, class... Cells, size_t... I>
 CONSTEXPR bool check_impl(const tl<true, Cells...> &tape, [[maybe_unused]] std::index_sequence<I...>) {
     tl<true, Origins...> origins;
 
-    auto modifiers = extract_unique(tape);
+    #ifdef SIMP_LOG_FLOW
+    std::cout << "Checking origin types: " << type_name<tl<true, Origins...>>() << "\n"
+              << "Cells tl: " << type_name<decltype(tape)>() << std::endl;
+    #endif
+
+    auto modifiers = typelist::utils::extract_unique_modifiers(tape);
+
+    #ifdef SIMP_LOG_FLOW
+    std::cout << "Found unique modifiers: " << type_name<decltype(modifiers)>() << std::endl;
+    #endif
 
     return ((state_machine::evaluate<decltype(get<I>(origins))>(modifiers, tape)) && ... && true);
 }
