@@ -4,6 +4,7 @@
 
 #include "internal/core.h"
 #include "internal/modifiers.h"
+#include "../contrib/variadic_not_empty.h"
 
 #include <cstddef>
 #include <functional>
@@ -12,38 +13,20 @@ namespace simp::typelist {
 
 /**
  * Tuple-like container that can act either as a compile-time meta-type-list or a tuple.
- * Can store templated classes (template template parameters like foo<bar, baz>).
+ * Stores templated classes only (template template parameters like foo<bar, baz>).
  */
 template <bool pure, class...> struct tl { };
 
+/**
+ * Wrapper that is returned while accessing tl's element
+ */
 template <bool pure, class...>
 struct tl_holder { };
 
-template <class T>
-struct tl_holder<true, T> {
-    using type = T;
-
-    CONSTEXPR const static bool pure = true;
-    CONSTEXPR const static bool dependent = false;
-};
-
-template <class T>
-struct tl_holder<false, T> {
-    using type = T;
-
-    CONSTEXPR const static bool pure = false;
-    CONSTEXPR const static bool dependent = false;
-
-    type value;
-};
-
-template <template <class...> class T, class ...Dependent>
-struct tl_holder<true, T<Dependent...>> {
-    using type = T<Dependent...>;
-    using dependent_tl = tl<true, Dependent...>;
-
-    CONSTEXPR const static bool pure = true;
-    CONSTEXPR const static bool dependent = true;
+template <template <class...> class E, class ... Dep>
+struct tl_holder<true, E<Dep...>> {
+    using type = E<Dep...>;
+    using dependent_tl = tl<true, Dep...>;
 };
 
 template <template <class...> class T, class ...Dependent>
@@ -51,16 +34,13 @@ struct tl_holder<false, T<Dependent...>> {
     using type = T<Dependent...>;
     using dependent_tl = tl<true, Dependent...>;
 
-    CONSTEXPR const static bool pure = false;
-    CONSTEXPR const static bool dependent = true;
-
     type value;
 };
 
 /// Empty tl
 template <bool pure> struct tl<pure> {};
 
-/// One-element tl with a dependent type
+/// One-element tl
 template <bool pure, template <class...> class E, class... Dep>
 struct tl<pure, E<Dep...>> : tl<pure>, tl_holder<pure, E<Dep...>> {
     using tail   = tl<pure>;
@@ -73,20 +53,7 @@ struct tl<pure, E<Dep...>> : tl<pure>, tl_holder<pure, E<Dep...>> {
     CONSTEXPR const holder& get_holder() const { return *this; }
 };
 
-/// One-element tl with an independent type
-template <bool pure, class E>
-struct tl<pure, E> : tl<pure>, tl_holder<pure, E> {
-    using tail   = tl<pure>;
-    using holder = tl_holder<pure, E>;
-
-    CONSTEXPR tail& get_tail() { return *this; }
-    CONSTEXPR const tail& get_tail() const { return *this; }
-
-    CONSTEXPR holder& get_holder() { return *this; }
-    CONSTEXPR const holder& get_holder() const { return *this; }
-};
-
-/// Multi-element tl with head being dependent.
+/// Multi-element tl.
 template <bool pure, template <class...> class E, class... Dep, class... Tail>
 struct tl<pure, E<Dep...>, Tail...> : tl<pure, Tail...>, tl_holder<pure, E<Dep...>> {
     using tail   = tl<pure, Tail...>;
@@ -99,23 +66,10 @@ struct tl<pure, E<Dep...>, Tail...> : tl<pure, Tail...>, tl_holder<pure, E<Dep..
     CONSTEXPR const holder& get_holder() const { return *this; }
 };
 
-/// Multi-element tl with head being independent.
-template <bool pure, class E,  class... Tail>
-struct tl<pure, E, Tail...> : tl<pure, Tail...>, tl_holder<pure, E> {
-    using tail   = tl<pure, Tail...>;
-    using holder = tl_holder<pure, E>;
-
-    CONSTEXPR tail& get_tail() { return *this; }
-    CONSTEXPR const tail& get_tail() const { return *this; }
-
-    CONSTEXPR holder& get_holder() { return *this; }
-    CONSTEXPR const holder& get_holder() const { return *this; }
-};
-
 namespace utils {
 
-template <size_t I, bool pure, class Type, class ...Types>
-CONSTEXPR auto get(const tl<pure, Type, Types...>& list) {
+template <size_t I, bool pure, class E, class ... Tail>
+CONSTEXPR auto get(const tl<pure, E, Tail...>& list) {
     if CONSTEXPR_IF (I == 0) {
         return list.get_holder();
     } else {
@@ -124,15 +78,15 @@ CONSTEXPR auto get(const tl<pure, Type, Types...>& list) {
 }
 
 namespace {
-template <class Functor, size_t... I, class... Args>
-CONSTEXPR void apply_impl(Functor &&functor, tl<false, Args...> &list, std::index_sequence<I...>) {
+template <class Functor, size_t... I, class... E>
+CONSTEXPR void apply_impl(Functor &&functor, tl<false, E...> &list, std::index_sequence<I...>) {
     (functor(get<I>(list).value), ...);
 }
 }
 
-template <class Functor, class... Args>
-CONSTEXPR void apply(Functor &&functor, tl<false, Args...> &list) {
-    apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<Args...>{});
+template <class Functor, class... E>
+CONSTEXPR void apply(Functor &&functor, tl<false, E...> &list) {
+    apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<E...>{});
 }
 
 template <bool pure, class Target, class E>
@@ -145,15 +99,10 @@ CONSTEXPR auto find(const tl<pure, E>& list) {
     }
 }
 
-namespace {
-        template <class...> struct ne {};
-        }
 
-template <bool pure, class Target, class First, class... Others,
-    typename = std::enable_if_t<!std::is_same_v<ne<>, ne<Others...>>>
->
-CONSTEXPR auto find(const tl<pure, First, Others...> &list) {
-    if CONSTEXPR_IF(std::is_same_v<First, Target>) {
+template <bool pure, class Target, class E, class... Tail, typename = enable_if_not_empty<Tail...>>
+CONSTEXPR auto find(const tl<pure, E, Tail...> &list) {
+    if CONSTEXPR_IF(std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
         return find<Target>(list.get_base());
@@ -167,7 +116,6 @@ CONSTEXPR auto add_front(const tl<true, E, Tail...>&) -> tl<true, Add, E, Tail..
     return {};
 }
 
-/// Single-element tl with a dependent head
 template <template <class...> class E, class... Dep>
 CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>> &)
     -> std::conditional_t<std::is_same_v<modifiers::relation_modifier<Dep...>, E<Dep...>>, tl<true, E<Dep...>>,
@@ -175,15 +123,7 @@ CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>> &)
     return {};
 }
 
-/// Single-element tl with an independent head
-template <class E, class... Dep>
-CONSTEXPR auto extract_unique_modifiers(const tl<true, E> &) -> tl<true> {
-return {};
-}
-
-/// tl with a dependent head
-template <template <class...> class E, class... Dep, class... Tail,
-          typename = std::enable_if_t<!std::is_same_v<ne<>, ne<Tail...>>>>
+template <template <class...> class E, class... Dep, class... Tail, typename = enable_if_not_empty<Tail...>>
 CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list) {
     return
         /// Current type is a modifier
@@ -193,13 +133,6 @@ CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list
          >) ?
          add_front<E<Dep...>>(list) : /// add it
          extract_unique_modifiers(list.get_tail()); /// else return the tail
-}
-
-/// tl with an independent head
-template <class E, class... Tail,
-    typename = std::enable_if_t<!std::is_same_v<ne<>, ne<Tail...>>>>
-CONSTEXPR auto extract_unique_modifiers(const tl<true, E, Tail...> &list) {
-    return extract_unique_modifiers(list.get_tail());
 }
 } // namespace utils
 }

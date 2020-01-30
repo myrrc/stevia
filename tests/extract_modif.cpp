@@ -11,7 +11,7 @@ int main() {
 
     constexpr auto list = tl<true,
         relation_modifier<mod_neg_base_t>,
-        integral_rel_t
+        integral_rel_t<void>
     >{};
 
     [[maybe_unused]] constexpr auto um {extract_unique_modifiers(list)};
