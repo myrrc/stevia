@@ -39,7 +39,7 @@ private:
 
     template <class Cell> CONSTEXPR void parse_cell() {
         if
-            CONSTEXPR_IF(std::is_base_of_v<modifiers::modifier_base, Cell>) {
+            constexpr(std::is_base_of_v<modifiers::modifier_base, Cell>) {
                 typelist::utils::find<Cell>(contexts).value.appeared();
 
                 #ifdef SIMP_LOG_FLOW
@@ -51,7 +51,7 @@ private:
                 return;
             }
         else if
-            CONSTEXPR_IF(std::is_base_of_v<relations::relation_base, Cell>) {
+            constexpr(std::is_base_of_v<relations::relation_base, Cell>) {
                 bool relation_eval_result = parse_relation<Cell>();
 
             #ifdef SIMP_LOG_FLOW

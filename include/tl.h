@@ -70,7 +70,7 @@ namespace utils {
 
 template <size_t I, bool pure, class E, class ... Tail>
 CONSTEXPR auto get(const tl<pure, E, Tail...>& list) {
-    if CONSTEXPR_IF (I == 0) {
+    if constexpr (I == 0) {
         return list.get_holder();
     } else {
         return get<I - 1>(list.get_tail());
@@ -89,10 +89,9 @@ CONSTEXPR void apply(Functor &&functor, tl<false, E...> &list) {
     apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<E...>{});
 }
 
-template <bool pure, class Target, class E>
+template <class Target, bool pure, class E>
 CONSTEXPR auto find(const tl<pure, E>& list) {
-    if
-    CONSTEXPR_IF(std::is_same_v<E, Target>) {
+    if constexpr (std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
         return tl_holder<!pure /*to indicate that element was not found*/, Target>();
@@ -100,12 +99,12 @@ CONSTEXPR auto find(const tl<pure, E>& list) {
 }
 
 
-template <bool pure, class Target, class E, class... Tail, typename = enable_if_not_empty<Tail...>>
+template <class Target, bool pure, class E, class... Tail, typename = enable_if_not_empty<Tail...>>
 CONSTEXPR auto find(const tl<pure, E, Tail...> &list) {
-    if CONSTEXPR_IF(std::is_same_v<E, Target>) {
+    if constexpr (std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
-        return find<Target>(list.get_base());
+        return find<Target>(list.get_tail());
     }
 }
 
@@ -127,12 +126,12 @@ template <template <class...> class E, class... Dep, class... Tail, typename = e
 CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list) {
     return
         /// Current type is a modifier
-        (std::is_same_v<modifiers::relation_modifier<Dep...>, E<Dep...> > &&
+        (std::is_same_v<modifiers::relation_modifier<Dep...>, E<Dep...>> &&
          /// Tail does not contain it
-         std::is_same_v<decltype(find<true, E<Dep...>>(list.get_tail())), tl_holder<false, E<Dep...>>
-         >) ?
-         add_front<E<Dep...>>(list) : /// add it
-         extract_unique_modifiers(list.get_tail()); /// else return the tail
+         std::is_same_v<decltype(find<true, E<Dep...>>(list.get_tail())), tl_holder<false, E<Dep...>>>)
+            ? add_front<E<Dep...>>(list)
+            :                                          /// add it
+            extract_unique_modifiers(list.get_tail()); /// else return the tail
 }
 } // namespace utils
 }

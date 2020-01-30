@@ -1,5 +1,5 @@
-#include "include/guard.h"
-#include "include/internal/relation_macro.h"
+#include "../include/guard.h"
+#include "../include/internal/relation_macro.h"
 
 simp_relation(inherits, class ...B, B..., (std::is_base_of_v<B, Origin> && ...))
 simp_simple_relation(integral,(std::is_integral_v<Origin>))
