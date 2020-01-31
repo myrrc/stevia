@@ -1,29 +1,19 @@
 #pragma once
 
 #include "core.h"
+#include "modifiers.h"
 
-#ifdef SIMP_LOG_FLOW
-#include <iostream>
-#include "../../contrib/type_name.h"
-#endif
+namespace stevia::internal {
 
-namespace simp::relations {
 struct relation_base;
-}
-
-namespace simp::state_machine {
-
-using typelist::tl;
 
 template <class Origin, class... Modifiers> struct state_machine {
     template <class... Cells> CONSTEXPR explicit state_machine(const tl<true, Cells...> &list) {
-        #ifdef SIMP_LOG_FLOW
-        std::cout << "Initialized state machine for \""
-                  << type_name<Origin>() << "\"\n"
-                  << sizeof...(Cells) << " steps\n"
-                  << "Cells tl: " << type_name<decltype(list)>()
-                  << std::endl;
-        #endif
+        STEVIA_LOG << "Initialized state machine for \""
+                 << type_name<Origin>() << "\"\n"
+                 << sizeof...(Cells) << " steps\n"
+                 << "Cells tl: " << type_name<decltype(list)>()
+                 << std::endl;
 
         parse_tape(list, std::index_sequence_for<Cells...>{});
     }
@@ -34,44 +24,31 @@ private:
     tl<false, Modifiers...> contexts{};
 
     template <class Tape, size_t... I> CONSTEXPR void parse_tape(const Tape &tape, std::index_sequence<I...>) {
-        ((parse_cell<typename decltype(typelist::utils::get<I>(tape))::type>()), ...);
+        ((parse_cell<typename decltype(get<I>(tape))::type>()), ...);
     }
 
     template <class Cell> CONSTEXPR void parse_cell() {
-        if
-            constexpr(std::is_base_of_v<modifiers::modifier_base, Cell>) {
-                typelist::utils::find<Cell>(contexts).value.appeared();
+        if constexpr(std::is_base_of_v<modifier_base, Cell>) {
+                find<Cell>(contexts).value.appeared();
 
-                #ifdef SIMP_LOG_FLOW
-                std::cout << "|\tFound modifier "
-                          << type_name<Cell>()
-                          << std::endl;
-                #endif
+                STEVIA_LOG << "|\tFound modifier " << type_name<Cell>() << std::endl;
 
                 return;
-            }
-        else if
-            constexpr(std::is_base_of_v<relations::relation_base, Cell>) {
-                bool relation_eval_result = parse_relation<Cell>();
+        } else if constexpr(std::is_base_of_v<relation_base, Cell>) {
+            bool relation_eval_result = parse_relation<Cell>();
 
-            #ifdef SIMP_LOG_FLOW
-                std::cout << "|\tExpression :" << type_name<Cell>()
-                      << " evaluated to " << std::boolalpha
-                      << relation_eval_result
-                      <<", state: " << state << " -> ";
-            #endif
+            STEVIA_LOG << "|\tExpression :" << type_name<Cell>()
+                     << " evaluated to " << std::boolalpha
+                     << relation_eval_result
+                     <<", state: " << state << " -> ";
 
-                typelist::utils::apply(
-                    [this, &relation_eval_result](auto &modifier) CONSTEXPR mutable {
+            apply( // TODO BUG: state not updating
+                [this, &relation_eval_result](auto &modifier) CONSTEXPR mutable {
                     state = modifier.evaluate(state, relation_eval_result);
                     modifier.reset();
-                }, contexts);
+                    }, contexts);
 
-            #ifdef SIMP_LOG_FLOW
-                std::cout << std::boolalpha << state << std::endl;
-            #endif
-
-                // TODO the bug is probably here
+            STEVIA_LOG << std::boolalpha << state << std::endl;
             }
     }
 
@@ -93,4 +70,4 @@ CONSTEXPR bool evaluate(const tl<true, Modifiers...> &, const tl<true, Cells...>
     return state_machine<typename OriginHolder::type, Modifiers...>(tape).state;
 }
 
-} // namespace simp::state_machine
+} // namespace stevia::state_machine

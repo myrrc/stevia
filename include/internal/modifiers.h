@@ -4,10 +4,14 @@
 
 #include "core.h"
 
-namespace simp::modifiers {
+namespace stevia::internal {
 
 struct modifier_base {};
-template <class ...Modifier> struct relation_modifier : modifier_base {
+
+template <class... Modifier> struct modifier {};
+
+/*
+template <class ...Modifier> struct modifier : modifier_base {
     bool found{false};
 
     CONSTEXPR void appeared() { found = true; }
@@ -15,10 +19,11 @@ template <class ...Modifier> struct relation_modifier : modifier_base {
 
     [[nodiscard]] CONSTEXPR bool evaluate(bool state, bool relation_result) const;
 };
+*/
 
 struct mod_or_base_t {};
 
-template <> struct relation_modifier<mod_or_base_t> : modifier_base {
+template <> struct modifier<mod_or_base_t> : modifier_base {
     bool found{false};
 
     CONSTEXPR void appeared() { found = true; }
@@ -29,11 +34,11 @@ template <> struct relation_modifier<mod_or_base_t> : modifier_base {
     }
 };
 
-using mod_or = relation_modifier<mod_or_base_t>;
+using mod_or = modifier<mod_or_base_t>;
 
 struct mod_neg_base_t {};
 
-template <> struct relation_modifier<mod_neg_base_t> : modifier_base {
+template <> struct modifier<mod_neg_base_t> : modifier_base {
     bool found{false};
 
     CONSTEXPR void appeared() { found = true; }
@@ -44,8 +49,8 @@ template <> struct relation_modifier<mod_neg_base_t> : modifier_base {
     }
 };
 
-using mod_neg = relation_modifier<mod_neg_base_t>;
+using mod_neg = modifier<mod_neg_base_t>;
 
-} // namespace simp::modifiers
+} // namespace stevia::internal
 
 #pragma clang diagnostic pop

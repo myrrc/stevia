@@ -2,7 +2,8 @@
 
 #include "relations.h"
 
-using simp::typelist::tl;
+using stevia::internal::tl;
+using stevia::internal::mod_or;
 
 template <template <class...> class Relation, class... Dep, class... OtherCells>
 static CONSTEXPR auto operator&&(const Relation<Dep...> &, const tl<true, OtherCells...> &)
@@ -10,7 +11,7 @@ static CONSTEXPR auto operator&&(const Relation<Dep...> &, const tl<true, OtherC
 
 template <template <class...> class Relation, class... Dep, class... OtherCells>
 static CONSTEXPR auto operator||(const Relation<Dep...> &, const tl<true, OtherCells...> &)
-    -> tl<true, Relation<Dep...>, simp::modifiers::mod_or, OtherCells...>{ return {}; }
+    -> tl<true, Relation<Dep...>, mod_or, OtherCells...>{ return {}; }
 
 template <template <class...> class Relation, class... Dep, class... OtherCells>
 static CONSTEXPR auto operator&&(const tl<true, OtherCells...> &, const Relation<Dep...> &)
@@ -18,4 +19,4 @@ static CONSTEXPR auto operator&&(const tl<true, OtherCells...> &, const Relation
 
 template <template <class...> class Relation, class... Dep, class... OtherCells>
 static CONSTEXPR auto operator||(const tl<true, OtherCells...> &, const Relation<Dep...> &)
--> tl<true, OtherCells..., simp::modifiers::mod_or, Relation<Dep...>>{ return{}; }
+-> tl<true, OtherCells..., mod_or, Relation<Dep...>>{ return{}; }

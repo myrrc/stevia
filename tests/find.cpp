@@ -1,23 +1,19 @@
-#include "../include/guard.h"
 #include "../include/internal/relation_macro.h"
+#include "../include/stevia.h"
 
-simp_simple_relation(integral,(std::is_integral_v<Origin>))
+stevia_make_simple_relation(integral,(std::is_integral_v<Origin>))
 
 int main() {
-    using simp::typelist::tl;
-    using simp::modifiers::relation_modifier;
-    using simp::modifiers::mod_neg_base_t;
-    using simp::typelist::utils::find;
-    using simp::typelist::tl_holder;
+    using namespace simp::internal;
 
     constexpr auto list = tl<true,
-        relation_modifier<mod_neg_base_t>,
+        modifier<mod_neg_base_t>,
         integral_rel_t<void>
     >{};
 
     static_assert(std::is_same_v<
-        decltype(find<relation_modifier<mod_neg_base_t>>(list)),
-        tl_holder<true, relation_modifier<mod_neg_base_t>>
+        decltype(find<modifier<mod_neg_base_t>>(list)),
+        tl_holder<true, modifier<mod_neg_base_t>>
     >);
 
     static_assert(std::is_same_v<

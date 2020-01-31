@@ -1,18 +1,21 @@
-#include "../include/guard.h"
 #include "../include/internal/relation_macro.h"
+#include "../include/stevia.h"
 
-simp_simple_relation(integral,(std::is_integral_v<Origin>))
+stevia_make_simple_relation(integral, (std::is_integral_v<Origin>))
+
+#define stevia_test(name, functor, initial, expected)                                                                  \
+    static_assert((std::is_same_v<decltype(functor(initial)), decltype(expected)>), "Test \"" name "\" failed")
+
 
 int main() {
-    using simp::typelist::tl;
-    using simp::modifiers::relation_modifier;
-    using simp::modifiers::mod_neg_base_t;
-    using simp::typelist::utils::extract_unique_modifiers;
+    using namespace stevia::internal;
 
-    constexpr auto list = tl<true,
-        relation_modifier<mod_neg_base_t>,
-        integral_rel_t<void>
-    >{};
+    using _or = modifier<mod_or_base_t>;
+    using neg = modifier<mod_neg_base_t>;
+    using rel = integral_rel_t<void>;
 
-    [[maybe_unused]] constexpr auto um {extract_unique_modifiers(list)};
+    stevia_test("!integral", extract_unique_modifiers, (tl<true, _or, rel>{}), (tl<true, _or>{}));
+
+    stevia_test("integral || integral || !integral || !integral", extract_unique_modifiers,
+        (tl<true, rel, _or, rel, _or, neg, rel, _or, neg, rel>{}), (tl<true, _or, neg>{}));
 }
