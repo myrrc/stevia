@@ -1,7 +1,7 @@
 #pragma once
 
 #define stevia_make_relation(__name, ___dep, __cdep, __cond)                                                                  \
-    template <___dep> struct __name##_rel_t : simp::internal::relation<__name##_rel_t, __cdep> {            \
+    template <___dep> struct __name##_rel_t : stevia::internal::relation<__name##_rel_t, __cdep> {            \
         template <class Origin> CONSTEXPR static bool check = __cond;                                           \
     };                                                                                                                 \
     template <___dep> CONSTEXPR const static __name##_rel_t<__cdep> __name;

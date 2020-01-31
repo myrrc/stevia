@@ -20,6 +20,12 @@ template <bool pure, class...> struct tl { };
 template <bool pure, class...>
 struct tl_holder { };
 
+/// Needed in state_machine::evaluate() only
+template <class E>
+struct tl_holder<true, E> {
+    using type = E;
+};
+
 template <template <class...> class E, class ... Dep>
 struct tl_holder<true, E<Dep...>> {
     using type = E<Dep...>;
@@ -43,8 +49,8 @@ struct tl<pure, E<Dep...>> : tl<pure> {
 
     holder_t holder;
 
-    CONSTEXPR tail_t& get_tail() { return *this; }
-    CONSTEXPR const tail_t& get_tail() const { return *this; }
+    CONSTEXPR tail_t get_tail() { return *this; }
+    CONSTEXPR const tail_t get_tail() const { return *this; }
 
     CONSTEXPR holder_t& get_holder() { return holder; }
     CONSTEXPR const holder_t& get_holder() const { return holder; }
@@ -58,8 +64,8 @@ struct tl<pure, E<Dep...>, Tail...> : tl<pure, Tail...> {
 
     holder_t holder;
 
-    CONSTEXPR tail_t& get_tail() { return *this; }
-    CONSTEXPR const tail_t& get_tail() const { return *this; }
+    CONSTEXPR tail_t get_tail() { return *this; }
+    CONSTEXPR const tail_t get_tail() const { return *this; }
 
     CONSTEXPR holder_t& get_holder() { return holder; }
     CONSTEXPR const holder_t& get_holder() const { return holder; }
@@ -74,6 +80,15 @@ CONSTEXPR auto get(const tl<pure, E, Tail...>& list) {
     }
 }
 
+template <size_t I, class E, class ...Tail>
+CONSTEXPR auto get() {
+    if constexpr (I == 0) {
+        return tl_holder<true, E>{};
+    } else {
+        return get<I - 1, Tail...>();
+    }
+}
+
 namespace {
 template <class Functor, size_t... I, class... E>
 CONSTEXPR void apply_impl(Functor &&functor, tl<false, E...> &list, std::index_sequence<I...>) {
@@ -84,6 +99,11 @@ CONSTEXPR void apply_impl(Functor &&functor, tl<false, E...> &list, std::index_s
 template <class Functor, class... E>
 CONSTEXPR void apply(Functor &&functor, tl<false, E...> &list) {
     apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<E...>{});
+}
+
+template <class Target, bool pure>
+CONSTEXPR auto find(const tl<pure>&) {
+    return tl_holder<!pure /*to indicate that element was not found*/, Target>();
 }
 
 template <class Target, bool pure, class E>
@@ -102,6 +122,11 @@ CONSTEXPR auto find(const tl<pure, E, Tail...> &list) {
     } else {
         return find<Target>(list.get_tail());
     }
+}
+
+template <class Add>
+CONSTEXPR auto add_front(const tl<true>&) -> tl<true, Add> {
+    return {};
 }
 
 template <class Add, class E, class ...Tail>
