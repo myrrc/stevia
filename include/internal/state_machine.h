@@ -11,11 +11,7 @@ struct relation_base;
 
 template <class Origin, class... Modifiers> struct state_machine {
     template <class... Cells> CONSTEXPR explicit state_machine(const tl<true, Cells...> &list) {
-        STEVIA_LOG << "Initialized state machine for \""
-                   << type_name<Origin>() << "\"\n"
-                   << sizeof...(Cells) << " steps\n"
-                   << "Cells tl: " << type_name<decltype(list)>()
-                   << "\n";
+        STEVIA_LOG << "Initialized state machine for \"" << type_name<Origin>() << "\"\n" << sizeof...(Cells) << " steps\n";
 
         parse_tape(list, std::index_sequence_for<Cells...>{});
     }
@@ -84,7 +80,7 @@ private:
                         STEVIA_LOG << "final: " << state << " -> ";
 
                         if constexpr (modifier.unary) {
-                            state = modifier.evaluate(intermediate_state);
+                            state &= modifier.evaluate(intermediate_state);
                         } else {
                             state = modifier.evaluate(state, intermediate_state);
                         }

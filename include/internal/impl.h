@@ -27,26 +27,22 @@ CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list
     }
 }
 
-template <class... Origins, class... Cells, size_t... I>
+template <bool all, class... Origins, class... Cells, size_t... I>
 CONSTEXPR bool check_impl(const tl<true, Cells...> &tape, std::index_sequence<I...>) {
     STEVIA_LOG << "Checking origin types: " << type_name<tl<true, Origins...>>() << "\n"
                << "Cells tl: " << type_name<decltype(tape)>() << "\n";
 
     auto modifiers = extract_unique_modifiers(tape);
-
-    STEVIA_LOG << "Found unique modifiers: " << type_name<decltype(modifiers)>() << "\n";
-
-    return ((evaluate<decltype(get<I, Origins...>())>(modifiers, tape)) && ... && true);
-}
-
-template <class... Origins, class... Cells> CONSTEXPR
-bool where_impl(const tl<true, Origins...>&, const tl<true, Cells...> &tape) {
-    return check_impl<Origins...>(tape, std::index_sequence_for<Origins...>{});
+    if constexpr (all) {
+        return ((evaluate<decltype(get<I, Origins...>())>(modifiers, tape)) && ... && true);
+    } else {
+        return ((evaluate<decltype(get<I, Origins...>())>(modifiers, tape)) || ... || false);
+    }
 }
 
 template <bool cond>
 struct assert_helper {
-        CONSTEXPR assert_helper(std::string_view) {
+        CONSTEXPR assert_helper() {
             static_assert(cond, "Assertion failed");
         }
     };

@@ -1,7 +1,7 @@
 #pragma once
 
 //#define STEVIA_DEBUG
-#define STEVIA_LOG_FLOW
+//#define STEVIA_LOG_FLOW
 
 #ifdef STEVIA_DEBUG
 #define CONSTEXPR inline
@@ -26,3 +26,5 @@ struct trivia_out {
 #define STEVIA_LOG trivia_out{}
 
 #endif
+
+#include <cstddef>

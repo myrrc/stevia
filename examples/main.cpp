@@ -11,11 +11,16 @@ struct child : base1, base2 {};
 using child2 = child;
 
 int main() {
-    //stevia::check<child>(inherits<base1, base2> || inherits<base3>);
-    //stevia::check<child>(inherits<base1, base2> || !inherits<base3>);
-    //stevia::check<child>(!inherits<base1, base2> || inherits<base3>);
-    stevia::check<child>(!inherits<base1, base2> && !inherits<base3>);
-    //stevia::check<child>(!integral);
-    //stevia::check<child>(integral);
-    //stevia::assert<child>(inherits<base1, base2>);
+    //using namespace stevia::check;
+    //using namespace stevia::assert;
+
+    //static_assert(all<child>(inherits<base1, base2> || inherits<base3>));
+    //static_assert(check::all<child>(inherits<base1, base2> || !inherits<base3>));
+    //check::all<child>(!inherits<base1, base2> || inherits<base3>);
+    //check::all<child>(!inherits<base1, base2> && !inherits<base3>);
+    //check::all<child>(inherits<base1, base2> && !inherits<base3>);
+    //check::all<child>(!inherits<base1, base2> || !inherits<base3>);
+    //static_assert(stevia::check<child>(!integral));
+    //static_assert(!stevia::check<child>(integral));
+    stevia::assert<child>(inherits<base1, base2>);
 }
