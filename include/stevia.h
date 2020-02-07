@@ -2,6 +2,7 @@
 
 #include "internal/impl.h"
 #include "internal/operators.h"
+#include "../contrib/is_specialization.h"
 
 namespace stevia {
 
@@ -10,14 +11,21 @@ template <class... Origins, class... Cells> CONSTEXPR bool check(const internal:
 }
 
 template <class... Origins, class Relation,
-    typename = std::enable_if_t<std::is_base_of_v<internal::relation_base, Relation>>>
+    typename = std::enable_if_t<
+        std::is_base_of_v<internal::relation_base, Relation>>>
 CONSTEXPR bool check(const Relation &) {
     return check<Origins...>(internal::tl<true, Relation>{});
 }
 
 template <class... Origins, class... Cells>
-CONSTEXPR void assert(const internal::tl<true, Cells...> &tape) {
-    internal::assert_helper<check<Origins...>(tape)>{};
+CONSTEXPR void assert(const internal::tl<true, Cells...> &tape, std::string_view message = "Assertion failed") {
+    internal::assert_helper<check<Origins...>(tape)>{message};
+}
+
+template <class... Origins, class Relation,
+    typename = std::enable_if_t<std::is_base_of_v<internal::relation_base, Relation>>>
+CONSTEXPR void assert(const Relation &, std::string_view message = "Assertion failed") {
+    internal::assert_helper<check<Origins...>(internal::tl<true, Relation>{})>{message};
 }
 
 template <class h, auto& Tape>

@@ -3,6 +3,7 @@
 #include "relations.h"
 #include "state_machine.h"
 #include "tl.h"
+#include <cstddef>
 
 namespace stevia::internal {
 
@@ -12,7 +13,7 @@ CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>> &)
 
 template <template <class...> class E, class... Dep, class... Tail, typename = enable_if_not_empty<Tail...>>
 CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list) {
-    auto tail_modifiers { extract_unique_modifiers(list.get_tail()) };
+    auto tail_modifiers { extract_unique_modifiers(static_cast<const tl<true, Tail...>&>(list)) };
     auto tail_has_e     { find<E<Dep...>, true>(tail_modifiers) };
 
     constexpr bool need_to_add =
@@ -29,11 +30,11 @@ CONSTEXPR auto extract_unique_modifiers(const tl<true, E<Dep...>, Tail...> &list
 template <class... Origins, class... Cells, size_t... I>
 CONSTEXPR bool check_impl(const tl<true, Cells...> &tape, std::index_sequence<I...>) {
     STEVIA_LOG << "Checking origin types: " << type_name<tl<true, Origins...>>() << "\n"
-               << "Cells tl: " << type_name<decltype(tape)>() << std::endl;
+               << "Cells tl: " << type_name<decltype(tape)>() << "\n";
 
     auto modifiers = extract_unique_modifiers(tape);
 
-    STEVIA_LOG << "Found unique modifiers: " << type_name<decltype(modifiers)>() << std::endl;
+    STEVIA_LOG << "Found unique modifiers: " << type_name<decltype(modifiers)>() << "\n";
 
     return ((evaluate<decltype(get<I, Origins...>())>(modifiers, tape)) && ... && true);
 }
@@ -45,7 +46,7 @@ bool where_impl(const tl<true, Origins...>&, const tl<true, Cells...> &tape) {
 
 template <bool cond>
 struct assert_helper {
-        CONSTEXPR assert_helper() {
+        CONSTEXPR assert_helper(std::string_view) {
             static_assert(cond, "Assertion failed");
         }
     };

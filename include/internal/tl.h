@@ -5,6 +5,7 @@
 #include "core.h"
 #include "modifiers.h"
 #include "variadic_not_empty.h"
+#include <cstddef>
 
 namespace stevia::internal {
 
@@ -23,20 +24,21 @@ struct tl_holder { };
 /// Needed in state_machine::evaluate() only
 template <class E>
 struct tl_holder<true, E> {
-    using type = E;
+    using value_t = E;
 };
 
 template <template <class...> class E, class ... Dep>
 struct tl_holder<true, E<Dep...>> {
-    using type = E<Dep...>;
+    using value_t = E<Dep...>;
 };
 
-template <template <class...> class T, class ...Dependent>
-struct tl_holder<false, T<Dependent...>> {
-    using type = T<Dependent...>;
-
-    type value;
+template <template <class...> class E, class ... Dep>
+struct tl_holder<false, E<Dep...>> {
+    using value_t = E<Dep...>;
+    value_t  value;
 };
+
+template <bool pure, class T> CONSTEXPR static tl_holder<!pure, T> elem_not_found;
 
 /// Empty tl
 template <bool pure> struct tl<pure> {};
@@ -44,13 +46,9 @@ template <bool pure> struct tl<pure> {};
 /// One-element tl
 template <bool pure, template <class...> class E, class... Dep>
 struct tl<pure, E<Dep...>> : tl<pure> {
-    using tail_t   = tl<pure>;
     using holder_t = tl_holder<pure, E<Dep...>>;
 
     holder_t holder;
-
-    CONSTEXPR tail_t get_tail() { return *this; }
-    CONSTEXPR const tail_t get_tail() const { return *this; }
 
     CONSTEXPR holder_t& get_holder() { return holder; }
     CONSTEXPR const holder_t& get_holder() const { return holder; }
@@ -59,24 +57,29 @@ struct tl<pure, E<Dep...>> : tl<pure> {
 /// Multi-element tl.
 template <bool pure, template <class...> class E, class... Dep, class... Tail>
 struct tl<pure, E<Dep...>, Tail...> : tl<pure, Tail...> {
-    using tail_t   = tl<pure, Tail...>;
     using holder_t = tl_holder<pure, E<Dep...>>;
 
     holder_t holder;
-
-    CONSTEXPR tail_t get_tail() { return *this; }
-    CONSTEXPR const tail_t get_tail() const { return *this; }
 
     CONSTEXPR holder_t& get_holder() { return holder; }
     CONSTEXPR const holder_t& get_holder() const { return holder; }
 };
 
 template <size_t I, bool pure, class E, class ... Tail>
-CONSTEXPR auto get(const tl<pure, E, Tail...>& list) {
+CONSTEXPR const auto& get(const tl<pure, E, Tail...>& list) {
     if constexpr (I == 0) {
         return list.get_holder();
     } else {
-        return get<I - 1>(list.get_tail());
+        return get<I - 1>(static_cast<const tl<pure, Tail...>&>(list));
+    }
+}
+
+template <size_t I, bool pure, class E, class ... Tail>
+CONSTEXPR auto& get(tl<pure, E, Tail...>& list) {
+    if constexpr (I == 0) {
+        return list.get_holder();
+    } else {
+        return get<I - 1>(static_cast<tl<pure, Tail...>&>(list));
     }
 }
 
@@ -97,30 +100,54 @@ CONSTEXPR void apply_impl(Functor &&functor, tl<false, E...> &list, std::index_s
 }
 
 template <class Functor, class... E>
-CONSTEXPR void apply(Functor &&functor, tl<false, E...> &list) {
+CONSTEXPR void apply(Functor && functor, tl<false, E...> &list) {
     apply_impl(std::forward<Functor>(functor), list, std::index_sequence_for<E...>{});
 }
 
 template <class Target, bool pure>
-CONSTEXPR auto find(const tl<pure>&) {
-    return tl_holder<!pure /*to indicate that element was not found*/, Target>();
+CONSTEXPR const auto& find(const tl<pure>&) {
+    return elem_not_found<pure, Target>;
+}
+
+
+template <class Target, bool pure>
+CONSTEXPR auto& find(tl<pure>&) {
+    return elem_not_found<pure, Target>;
 }
 
 template <class Target, bool pure, class E>
-CONSTEXPR auto find(const tl<pure, E>& list) {
+CONSTEXPR const auto& find(const tl<pure, E>& list) {
     if constexpr (std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
-        return tl_holder<!pure /*to indicate that element was not found*/, Target>();
+        return elem_not_found<pure, Target>;
+    }
+}
+
+template <class Target, bool pure, class E>
+CONSTEXPR auto& find(tl<pure, E>& list) {
+    if constexpr (std::is_same_v<E, Target>) {
+        return list.get_holder();
+    } else {
+        return elem_not_found<pure, Target>;
     }
 }
 
 template <class Target, bool pure, class E, class... Tail, typename = enable_if_not_empty<Tail...>>
-CONSTEXPR auto find(const tl<pure, E, Tail...> &list) {
+CONSTEXPR const auto& find(const tl<pure, E, Tail...> &list) {
     if constexpr (std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
-        return find<Target>(list.get_tail());
+        return find<Target>(static_cast<tl<pure, Tail...>&>(list));
+    }
+}
+
+template <class Target, bool pure, class E, class... Tail, typename = enable_if_not_empty<Tail...>>
+CONSTEXPR auto& find(tl<pure, E, Tail...> &list) {
+    if constexpr (std::is_same_v<E, Target>) {
+        return list.get_holder();
+    } else {
+        return find<Target>(static_cast<tl<pure, Tail...>&>(list));
     }
 }
 

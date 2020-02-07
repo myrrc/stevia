@@ -11,11 +11,11 @@ struct child : base1, base2 {};
 using child2 = child;
 
 int main() {
-    bool res = stevia::check<child, child2>(inherits<base3>);
-
-    return res ? 0 : 1;
-
-    //static_assert(simp::check<child, child2>(inherits<base1, base2> && !inherits<base3>));
-
-    //simp::guard::assert<child>(inherits<base1, base2>);
+    //stevia::check<child>(inherits<base1, base2> || inherits<base3>);
+    //stevia::check<child>(inherits<base1, base2> || !inherits<base3>);
+    //stevia::check<child>(!inherits<base1, base2> || inherits<base3>);
+    stevia::check<child>(!inherits<base1, base2> && !inherits<base3>);
+    //stevia::check<child>(!integral);
+    //stevia::check<child>(integral);
+    //stevia::assert<child>(inherits<base1, base2>);
 }

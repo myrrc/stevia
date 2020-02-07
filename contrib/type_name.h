@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 /// https://stackoverflow.com/questions/81870/is-it-possible-to-print-a-variables-type-in-standard-c#20170989
 template <class T> constexpr std::string_view type_name() {
 #ifdef __clang__

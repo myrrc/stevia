@@ -18,6 +18,11 @@
 
 #else
 
-#define STEVIA_LOG(expr)
+struct trivia_out {
+    template <class T>
+    constexpr trivia_out operator << (const T&) const noexcept { return {}; }
+};
+
+#define STEVIA_LOG trivia_out{}
 
 #endif

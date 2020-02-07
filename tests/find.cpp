@@ -4,7 +4,7 @@
 stevia_make_simple_relation(integral,(std::is_integral_v<Origin>))
 
 int main() {
-    using namespace simp::internal;
+    using namespace stevia::internal;
 
     constexpr auto list = tl<true,
         modifier<mod_neg_base_t>,
