@@ -1,11 +1,8 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "HidingNonVirtualFunction"
 #pragma once
 
 #include "core.h"
 #include "modifiers.h"
 #include "variadic_not_empty.h"
-#include <cstddef>
 
 namespace stevia::internal {
 
@@ -21,7 +18,9 @@ template <bool pure, class...> struct tl { };
 template <bool pure, class...>
 struct tl_holder { };
 
-/// Needed in state_machine::evaluate() only
+/**
+ * Needed in state_machine::evaluate() only
+ */
 template <class E>
 struct tl_holder<true, E> {
     using value_t = E;
@@ -109,7 +108,6 @@ CONSTEXPR const auto& find(const tl<pure>&) {
     return elem_not_found<pure, Target>;
 }
 
-
 template <class Target, bool pure>
 CONSTEXPR auto& find(tl<pure>&) {
     return elem_not_found<pure, Target>;
@@ -138,7 +136,7 @@ CONSTEXPR const auto& find(const tl<pure, E, Tail...> &list) {
     if constexpr (std::is_same_v<E, Target>) {
         return list.get_holder();
     } else {
-        return find<Target>(static_cast<tl<pure, Tail...>&>(list));
+        return find<Target>(static_cast<const tl<pure, Tail...>&>(list));
     }
 }
 
@@ -160,6 +158,38 @@ template <class Add, class E, class ...Tail>
 CONSTEXPR auto add_front(const tl<true, E, Tail...>&) -> tl<true, Add, E, Tail...> {
     return {};
 }
+
+template <bool pure, class One>
+CONSTEXPR bool operator==(const tl_holder<pure, One> &, const tl_holder<pure, One> &) {
+    return true;
 }
 
-#pragma clang diagnostic pop
+template <bool pure, class One>
+CONSTEXPR bool operator==(const tl_holder<pure, One> &,
+                                        const tl_holder<!pure, One> &) {
+    return false;
+}
+
+template <bool pure, class One, class Two>
+CONSTEXPR bool operator==(const tl_holder<pure, One> &,
+                                        const tl_holder<pure, Two> &) {
+    return false;
+}
+
+template <bool pure, class ...One>
+CONSTEXPR bool operator==(const tl<pure, One...> &, const tl<pure, One...> &) {
+    return true;
+}
+
+template <bool pure, class ...One>
+CONSTEXPR bool operator==(const tl<pure, One...> &, const tl<!pure, One...> &) {
+    return false;
+}
+
+template <bool pure, class ...One, class ...Two>
+CONSTEXPR static inline bool operator==(const tl<pure, One...> &,
+                                        const tl<pure, Two...> &) {
+    return false;
+}
+
+}
