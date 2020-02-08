@@ -10,6 +10,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: prepare
       run: cmake tests/CMakeLists.txt
+    - name: cd
+      run: cd tests
     - name: make
       run: make
     - name: make check
